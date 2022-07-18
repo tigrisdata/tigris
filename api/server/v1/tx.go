@@ -26,7 +26,7 @@ func IsTxSupported(ctx context.Context) bool {
 	switch m {
 	case "Insert", "Replace", "Update", "Delete", "Read",
 		"CreateOrUpdateCollection", "DropCollection", "ListCollections",
-		"CommitTransaction", "RollbackTransaction":
+		"CommitTransaction", "RollbackTransaction", "Publish":
 		return true
 	default:
 		return false
@@ -92,6 +92,11 @@ func GetTransactionLegacy(req proto.Message) *TransactionCtx {
 		return r.GetTxCtx()
 	case *RollbackTransactionRequest:
 		return r.GetTxCtx()
+	case *PublishRequest:
+		if r.GetOptions() == nil || r.GetOptions().GetWriteOptions() == nil {
+			return nil
+		}
+		return r.GetOptions().GetWriteOptions().GetTxCtx()
 	}
 	return nil
 }

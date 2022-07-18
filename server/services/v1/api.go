@@ -445,3 +445,62 @@ func (s *apiService) Events(r *api.EventsRequest, stream api.Tigris_EventsServer
 
 	return nil
 }
+
+func (s *apiService) Publish(ctx context.Context, r *api.PublishRequest) (*api.PublishResponse, error) {
+	var wo *api.WriteOptions = nil
+	if r.GetOptions() != nil {
+		wo = r.GetOptions().WriteOptions
+	}
+
+	resp, err := s.Insert(ctx, &api.InsertRequest{
+		Db:         r.Db,
+		Collection: r.Collection,
+		Documents:  [][]byte{r.Message},
+		Options:    &api.InsertRequestOptions{WriteOptions: wo},
+	})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return &api.PublishResponse{
+		Status: resp.Status,
+	}, nil
+}
+
+func (s *apiService) Subscribe(r *api.SubscribeRequest, stream api.Tigris_SubscribeServer) error {
+	publisher := s.cdcMgr.GetPublisher(r.GetDb())
+	streamer, err := publisher.NewStreamer(s.kvStore)
+	if err != nil {
+		return err
+	}
+	defer streamer.Close()
+
+	for tx := range streamer.Txs {
+		for _, op := range tx.Ops {
+			_, _, collection, ok := s.encoder.DecodeTableName(op.Table)
+			if !ok {
+				log.Err(err).Str("table", string(op.Table)).Msg("failed to decode collection name")
+				return api.Errorf(api.Code_INTERNAL, "failed to decode collection name")
+			}
+
+			if r.Collection == collection {
+				td, err := internal.Decode(op.Data)
+				if err != nil {
+					log.Err(err).Str("data", string(op.Data)).Msg("failed to decode data")
+					return api.Errorf(api.Code_INTERNAL, "failed to decode data")
+				}
+
+				response := &api.SubscribeResponse{
+					Message: td.RawData,
+				}
+
+				if err := stream.Send(response); ulog.E(err) {
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
