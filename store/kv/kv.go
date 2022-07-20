@@ -17,6 +17,7 @@ package kv
 import (
 	"context"
 	"errors"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"strconv"
 	"unsafe"
 
@@ -101,6 +102,15 @@ func measureLow(ctx context.Context, name string, f func() error) {
 	if config.DefaultConfig.Metrics.Fdb.ResponseTime {
 		metrics.FdbRequests.Tagged(tags).Histogram("histogram", tally.DefaultBuckets)
 		defer metrics.FdbRequests.Tagged(tags).Histogram("histogram", tally.DefaultBuckets).Start().Stop()
+	}
+	if config.DefaultConfig.DatadogTrace.Enabled {
+		parentSpan, exists := tracer.SpanFromContext(ctx)
+		if exists {
+			childSpan := tracer.StartSpan(name, tracer.ChildOf(parentSpan.Context()))
+			defer childSpan.Finish()
+			childSpan.SetTag("fdb_op_name", name)
+		}
+
 	}
 	err := f()
 	if err == nil {

@@ -84,6 +84,10 @@ func Get(config *config.Config, tenantMgr *metadata.TenantManager, txMgr *transa
 		streamInterceptors = append(streamInterceptors, metricsStreamServerInterceptorCounter())
 	}
 
+	if config.DatadogTrace.Enabled {
+		streamInterceptors = append(streamInterceptors, ddTraceStream())
+	}
+
 	streamInterceptors = append(streamInterceptors, []grpc.StreamServerInterceptor{
 		grpc_opentracing.StreamServerInterceptor(),
 		grpc_recovery.StreamServerInterceptor(),
@@ -115,6 +119,10 @@ func Get(config *config.Config, tenantMgr *metadata.TenantManager, txMgr *transa
 
 	if config.Metrics.Grpc.Enabled && config.Metrics.Grpc.Counters {
 		unaryInterceptors = append(unaryInterceptors, metricsUnaryServerInterceptorCounters())
+	}
+
+	if config.DatadogTrace.Enabled {
+		unaryInterceptors = append(unaryInterceptors, ddTraceUnary())
 	}
 
 	unaryInterceptors = append(unaryInterceptors, []grpc.UnaryServerInterceptor{

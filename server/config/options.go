@@ -34,6 +34,7 @@ type Config struct {
 	Tracing      TracingConfig   `yaml:"tracing" json:"tracing"`
 	Profiling    ProfilingConfig `yaml:"profiling" json:"profiling"`
 	Metrics      MetricsConfig
+	DatadogTrace DatadogTraceConfig
 	FoundationDB FoundationDBConfig
 }
 
@@ -79,6 +80,11 @@ type MetricsConfig struct {
 	Grpc   GrpcMetricsConfig
 	Fdb    FdbMetricsConfig
 	Search SearchMetricsConfig
+}
+
+type DatadogTraceConfig struct {
+	// Global switch
+	Enabled bool `mapstructure:"enabled" yaml:"enabled" json:"enabled"`
 }
 
 type GrpcMetricsConfig struct {
@@ -156,6 +162,9 @@ var DefaultConfig = Config{
 			Counters:     true,
 			ResponseTime: true,
 		},
+	},
+	DatadogTrace: DatadogTraceConfig{
+		Enabled: true,
 	},
 }
 
