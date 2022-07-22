@@ -16,6 +16,8 @@ package transaction
 
 import (
 	"context"
+	"github.com/tigrisdata/tigris/server/config"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"sync"
 
 	"github.com/google/uuid"
@@ -135,6 +137,12 @@ func (s *TxSession) GetTxCtx() *api.TransactionCtx {
 }
 
 func (s *TxSession) start(ctx context.Context) error {
+	if config.DefaultConfig.DatadogTrace.Enabled {
+		span, _ := tracer.StartSpanFromContext(ctx, "StartTxSession")
+		defer span.Finish()
+		span.SetTag("fdb_tx", "Start")
+	}
+
 	s.Lock()
 	defer s.Unlock()
 
@@ -229,6 +237,7 @@ func (s *TxSession) SetVersionstampedValue(ctx context.Context, key []byte, valu
 }
 
 func (s *TxSession) SetVersionstampedKey(ctx context.Context, key []byte, value []byte) error {
+
 	s.Lock()
 	defer s.Unlock()
 
@@ -240,6 +249,11 @@ func (s *TxSession) SetVersionstampedKey(ctx context.Context, key []byte, value 
 }
 
 func (s *TxSession) Get(ctx context.Context, key []byte) ([]byte, error) {
+	if config.DefaultConfig.DatadogTrace.Enabled {
+		span, _ := tracer.StartSpanFromContext(ctx, "GetTxSession")
+		defer span.Finish()
+		span.SetTag("fdb_tx", "Get")
+	}
 	s.Lock()
 	defer s.Unlock()
 
@@ -251,6 +265,12 @@ func (s *TxSession) Get(ctx context.Context, key []byte) ([]byte, error) {
 }
 
 func (s *TxSession) Commit(ctx context.Context) error {
+	if config.DefaultConfig.DatadogTrace.Enabled {
+		span, _ := tracer.StartSpanFromContext(ctx, "CommitTxSession")
+		defer span.Finish()
+		span.SetTag("fdb_tx", "Commit")
+	}
+
 	s.Lock()
 	defer s.Unlock()
 

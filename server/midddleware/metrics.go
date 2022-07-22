@@ -17,16 +17,14 @@ package middleware
 import (
 	"context"
 	"errors"
-	"strconv"
-
-	"github.com/tigrisdata/tigris/server/request"
-	ulog "github.com/tigrisdata/tigris/util/log"
-	"github.com/uber-go/tally"
-
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	api "github.com/tigrisdata/tigris/api/server/v1"
 	"github.com/tigrisdata/tigris/server/metrics"
+	"github.com/tigrisdata/tigris/server/request"
+	ulog "github.com/tigrisdata/tigris/util/log"
+	"github.com/uber-go/tally"
 	"google.golang.org/grpc"
+	"strconv"
 )
 
 // There is no need to handle metrics configuration in the interceptors themselves, because they are not

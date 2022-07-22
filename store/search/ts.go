@@ -26,6 +26,7 @@ import (
 	"github.com/typesense/typesense-go/typesense"
 	tsApi "github.com/typesense/typesense-go/typesense/api"
 	"github.com/uber-go/tally"
+	"gopkg.in/DataDog/dd-trace-go.v1/ddtrace/tracer"
 	"io"
 	"net/http"
 )
@@ -92,6 +93,11 @@ func (m *storeImplWithMetrics) measure(ctx context.Context, name string, f func(
 	if config.DefaultConfig.Metrics.Search.ResponseTime {
 		metrics.SearchRequests.Tagged(tags).Histogram("histogram", tally.DefaultBuckets)
 		defer metrics.SearchRequests.Tagged(tags).Histogram("histogram", tally.DefaultBuckets).Start().Stop()
+	}
+	if config.DefaultConfig.DatadogTrace.Enabled {
+		span, _ := tracer.StartSpanFromContext(ctx, name)
+		defer span.Finish()
+		span.SetTag("search_op_name", name)
 	}
 	err := f()
 	if err == nil {
